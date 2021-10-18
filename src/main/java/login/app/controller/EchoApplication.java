@@ -16,8 +16,15 @@
 
 package login.app.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linecorp.bot.client.LineMessagingClient;
+import com.linecorp.bot.model.ReplyMessage;
 import com.linecorp.bot.model.event.AccountLinkEvent;
+import com.linecorp.bot.model.event.CallbackRequest;
 import com.linecorp.bot.model.event.Event;
 import com.linecorp.bot.model.event.MessageEvent;
 import com.linecorp.bot.model.event.message.TextMessageContent;
@@ -26,65 +33,59 @@ import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.response.IssueLinkTokenResponse;
 import com.linecorp.bot.spring.boot.annotation.EventMapping;
 import com.linecorp.bot.spring.boot.annotation.LineMessageHandler;
+import login.app.service.LineRequestHeaderVerifyService;
+import org.apache.tomcat.util.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-@SpringBootApplication
-@LineMessageHandler
+import static org.springframework.data.repository.init.ResourceReader.Type.JSON;
+
+@RestController
+@RequestMapping("/callback")
 public class EchoApplication {
     private final Logger log = LoggerFactory.getLogger(EchoApplication.class);
 
-    public static void main(String[] args) {
-        SpringApplication.run(EchoApplication.class, args);
-    }
-
-
-    @EventMapping
-    public void handleDefaultMessageEvent(Event event) {
-        System.out.println("event: " + event);
-    }
-
-    @Value("${line.bot.channel-token}")
-    private String token;
-
-    @Value("${server-url}")
-    private String serverUrl;
-
-    @Value("${liff-id}")
-    private String liffId;
-
     @Autowired
-    private LineMessagingClient lineMessagingClient;
+    LineRequestHeaderVerifyService service;
 
-    @EventMapping
-    public Message handleTextMessageEvent(MessageEvent<TextMessageContent> event) throws ExecutionException, InterruptedException {
-        Message res;
-        switch (event.getMessage().getText()) {
-            case "connect":
-                String userId = event.getSource().getUserId();
-                IssueLinkTokenResponse response = lineMessagingClient.issueLinkToken(userId).join();
-                String linkToken = response.getLinkToken();
-                res = new TextMessage(serverUrl + "/login?linkToken=" + linkToken);
-                break;
-            case "liff":
-                res = new TextMessage("https://liff.line.me/" + liffId);
-                break;
-            default:
-                res = new TextMessage(event.getMessage().getText());
+    @PostMapping
+    public ResponseEntity<Object> receiveLineEvent(@RequestBody String eventJson, @RequestHeader(name="x-line-signature", required=true) String xLineSignature) {
+        ResponseEntity res = null;
+        try {
+            if(service.verifyLineRequestHeader(eventJson, xLineSignature)) {
+                log.info("****** signature verify: true");
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode node = mapper.readTree(eventJson);
+
+                log.info(node.path("events").toString());
+
+                TextMessage message = new TextMessage("test");
+                ReplyMessage replyMessage = new ReplyMessage(node.get("events").get(0).get("replyToken").asText(), message);
+                res = new ResponseEntity(replyMessage, HttpStatus.OK);
+            } else {
+                log.info("****** signature verify: false");
+                res = new ResponseEntity("bad request", HttpStatus.BAD_REQUEST);
+            }
+        } catch (JsonProcessingException|NoSuchAlgorithmException | InvalidKeyException | UnsupportedEncodingException e) {
+            log.warn(e.getClass().getName(), e);
+            res = new ResponseEntity("bad request", HttpStatus.BAD_REQUEST);
         }
+
         return res;
     }
-
-    @EventMapping
-    public Message handleAccountLinkEvent(AccountLinkEvent event) {
-        //
-        return new TextMessage("nonce: " + event.getLink().getNonce() + ", userId(LINE): " + event.getSource().getUserId());
-    }
-
 }
