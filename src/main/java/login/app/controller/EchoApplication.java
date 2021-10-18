@@ -35,20 +35,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.util.concurrent.ExecutionException;
 
-@SpringBootApplication
 @LineMessageHandler
 public class EchoApplication {
     private final Logger log = LoggerFactory.getLogger(EchoApplication.class);
-
-    public static void main(String[] args) {
-        SpringApplication.run(EchoApplication.class, args);
-    }
-
-
-    @EventMapping
-    public void handleDefaultMessageEvent(Event event) {
-        System.out.println("event: " + event);
-    }
 
     @Value("${line.bot.channel-token}")
     private String token;
@@ -83,8 +72,12 @@ public class EchoApplication {
 
     @EventMapping
     public Message handleAccountLinkEvent(AccountLinkEvent event) {
-        //
         return new TextMessage("nonce: " + event.getLink().getNonce() + ", userId(LINE): " + event.getSource().getUserId());
+    }
+
+    @EventMapping
+    public void handleDefaultMessageEvent(Event event) {
+        System.out.println("event: " + event);
     }
 
 }
