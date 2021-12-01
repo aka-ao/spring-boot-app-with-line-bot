@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import login.app.service.UserDetailsServiceImpl;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 
 /**
  * SpringSecurityを利用するための設定クラス
@@ -22,12 +23,14 @@ import login.app.service.UserDetailsServiceImpl;
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+	SavedRequestAwareAuthenticationSuccessHandler loginSuccessHandler
+			= new SavedRequestAwareAuthenticationSuccessHandler();
 	
 	
 	@Autowired
 	private UserDetailsServiceImpl userDetailsService;
-	
-	//フォームの値と比較するDBから取得したパスワードは暗号化されているのでフォームの値も暗号化するために利用
+
 	@Bean
 	public BCryptPasswordEncoder passwordEncoder() {
 		BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
@@ -53,17 +56,18 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
+		loginSuccessHandler.setDefaultTargetUrl("/");
 		http
 		    .authorizeRequests()
-				.antMatchers("/**").permitAll()
+				.antMatchers("/login", "/callback", "/liff").permitAll()
 		        .anyRequest().authenticated();
 		http
 		    .formLogin()
-		        .loginPage("/login") //ログインページはコントローラを経由しないのでViewNameとの紐付けが必要
-		        .loginProcessingUrl("/sign_in") //フォームのSubmitURL、このURLへリクエストが送られると認証処理が実行される
-		        .usernameParameter("username") //リクエストパラメータのname属性を明示
+		        .loginPage("/login")
+		        .loginProcessingUrl("/sign_in")
+		        .usernameParameter("username")
 		        .passwordParameter("password")
-		        .successForwardUrl("/hello")
+				.successHandler(loginSuccessHandler)
 		        .failureUrl("/login?error")
 		        .permitAll()
 		        .and()
@@ -84,11 +88,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	@Autowired
 	public void configure(AuthenticationManagerBuilder auth) throws Exception{
 		auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
-		/*
-		auth
-		    .inMemoryAuthentication()
-		        .withUser("user").password("{noop}password").roles("USER");
-		*/
 	}
 
 }

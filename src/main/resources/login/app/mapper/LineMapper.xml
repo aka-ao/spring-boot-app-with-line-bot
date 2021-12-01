@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="login.app.mapper.LineMapper">
+    <insert id="insertLine">
+        insert into line (user_name, nonce) values(#{userName}, #{nonce});
+    </insert>
+
+    <update id="connectUser">
+        update line set line_id = #{lineId}, nonce = "" where nonce = #{nonce}
+    </update>
+
+    <select id="getUserNameByLineId" resultType="String">
+        select user_name from line where line_id = #{lineId}
+    </select>
+</mapper>

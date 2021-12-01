@@ -6,10 +6,9 @@ CREATE DATABASE login_app;
 USE login_app;
 
 CREATE TABLE user(
-    user_id INT AUTO_INCREMENT,
     user_name VARCHAR(255),
     password VARCHAR(255),
-    PRIMARY KEY(user_id)
+    PRIMARY KEY(user_name)
 );
 
 INSERT INTO user (user_name, password) VALUES
@@ -20,4 +19,11 @@ INSERT INTO user (user_name, password) VALUES
 (
     'pompom',
     'purin'
+);
+
+CREATE TABLE line(
+    user_name VARCHAR(255),
+    line_id VARCHAR(255),
+    nonce VARCHAR(255)
+    PRIMARY KEY(user_name)
 );

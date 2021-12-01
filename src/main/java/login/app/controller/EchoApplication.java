@@ -26,12 +26,11 @@ import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.response.IssueLinkTokenResponse;
 import com.linecorp.bot.spring.boot.annotation.EventMapping;
 import com.linecorp.bot.spring.boot.annotation.LineMessageHandler;
+import login.app.mapper.LineMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.util.concurrent.ExecutionException;
 
@@ -51,6 +50,9 @@ public class EchoApplication {
     @Autowired
     private LineMessagingClient lineMessagingClient;
 
+    @Autowired
+    private LineMapper mapper;
+
     @EventMapping
     public Message handleTextMessageEvent(MessageEvent<TextMessageContent> event) throws ExecutionException, InterruptedException {
         Message res;
@@ -59,7 +61,8 @@ public class EchoApplication {
                 String userId = event.getSource().getUserId();
                 IssueLinkTokenResponse response = lineMessagingClient.issueLinkToken(userId).join();
                 String linkToken = response.getLinkToken();
-                res = new TextMessage(serverUrl + "/login?linkToken=" + linkToken);
+                String loginUrl = serverUrl + "/login?linkToken=" + linkToken;
+                res = new TextMessage(loginUrl);
                 break;
             case "liff":
                 res = new TextMessage("https://liff.line.me/" + liffId);
@@ -72,7 +75,11 @@ public class EchoApplication {
 
     @EventMapping
     public Message handleAccountLinkEvent(AccountLinkEvent event) {
-        return new TextMessage("nonce: " + event.getLink().getNonce() + ", userId(LINE): " + event.getSource().getUserId());
+        String lineId = event.getSource().getUserId();
+        String nonce = event.getLink().getNonce();
+        mapper.connectUser(lineId, nonce);
+        String userName = mapper.getUserNameByLineId(lineId);
+        return new TextMessage("userName: " + userName + ", userId(LINE): " + lineId);
     }
 
     @EventMapping

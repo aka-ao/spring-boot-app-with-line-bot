@@ -3,6 +3,8 @@ package login.app.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import login.app.entity.LoginUser;
+import login.app.mapper.LoginUserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,9 +15,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import login.app.dao.LoginUserDao;
-import login.app.entity.LoginUser;
-
 /**
  * Spring Securityのユーザ検索用のサービスの実装クラス
  * DataSourceの引数として指定することで認証にDBを利用できるようになる
@@ -24,10 +23,9 @@ import login.app.entity.LoginUser;
  */
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService{
-	
-	//DBからユーザ情報を検索するメソッドを実装したクラス
+
 	@Autowired
-	private LoginUserDao userDao;
+	private LoginUserMapper loginUserMapper;
 	
 	/**
 	 * UserDetailsServiceインタフェースの実装メソッド
@@ -37,27 +35,18 @@ public class UserDetailsServiceImpl implements UserDetailsService{
 	 */
 	@Override
 	public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
-		
-		LoginUser user = userDao.findUser(userName);
-
-		System.out.println(user.getUserName());
-		System.out.println(user.getPassword());
+		LoginUser user = loginUserMapper.getLoginUserByUserId(userName);
 		
 		if (user == null) {
 			throw new UsernameNotFoundException("User" + userName + "was not found in the database");
 		}
-		//権限のリスト
-		//AdminやUserなどが存在するが、今回は利用しないのでUSERのみを仮で設定
-		//権限を利用する場合は、DB上で権限テーブル、ユーザ権限テーブルを作成し管理が必要
 		List<GrantedAuthority> grantList = new ArrayList<GrantedAuthority>();
 		GrantedAuthority authority = new SimpleGrantedAuthority("USER");
 		grantList.add(authority);
-		
-		//rawDataのパスワードは渡すことができないので、暗号化
+
 		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 		
-		//UserDetailsはインタフェースなのでUserクラスのコンストラクタで生成したユーザオブジェクトを
-		UserDetails userDetails = (UserDetails)new User(user.getUserName(), encoder.encode(user.getPassword()),grantList);
+		UserDetails userDetails = (UserDetails)new User(user.getUsername(), encoder.encode(user.getPassword()),grantList);
 		
 		return userDetails;
 	}
