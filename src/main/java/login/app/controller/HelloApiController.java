@@ -18,7 +18,7 @@ public class HelloApiController {
 
     @GetMapping("/liff/getLineId")
     public ResponseEntity<String> getLineId(@RequestHeader("Authorization")String token) throws URISyntaxException {
-        String lineId = authService.authAccessToken(token.substring(7));
-        return new ResponseEntity<String>(lineId, HttpStatus.OK);
+        String userId = authService.authAccessToken(token.substring(7));
+        return new ResponseEntity<String>(userId, HttpStatus.OK);
     }
 }

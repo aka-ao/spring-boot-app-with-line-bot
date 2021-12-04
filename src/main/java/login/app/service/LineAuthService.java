@@ -2,6 +2,8 @@ package login.app.service;
 
 import login.app.entity.LineAuthResponse;
 import login.app.entity.LineProfile;
+import login.app.mapper.LineMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,9 @@ import java.net.URISyntaxException;
 
 @Service
 public class LineAuthService {
+    @Autowired
+    LineMapper lineMapper;
+
     private RestTemplate restTemplate = new RestTemplate();
 
     public String authAccessToken(String accessToken) throws URISyntaxException {
@@ -29,7 +34,10 @@ public class LineAuthService {
                     .headers(headers)
                     .build();
 
-            return restTemplate.exchange(requestEntity, LineProfile.class).getBody().getUserId();
+            String lineId = restTemplate.exchange(requestEntity, LineProfile.class).getBody().getUserId();
+
+            System.out.println(lineId);
+            return lineMapper.getUserNameByLineId(lineId);
         }
         return "";
     }

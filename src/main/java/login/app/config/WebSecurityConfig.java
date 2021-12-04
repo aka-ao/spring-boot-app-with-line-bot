@@ -59,7 +59,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 		loginSuccessHandler.setDefaultTargetUrl("/");
 		http
 		    .authorizeRequests()
-				.antMatchers("/login", "/callback", "/liff").permitAll()
+				.antMatchers("/login", "/callback", "/liff/**", "/liff-starter.js", "/style.css").permitAll()
 		        .anyRequest().authenticated();
 		http
 		    .formLogin()
