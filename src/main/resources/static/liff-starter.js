@@ -1,6 +1,6 @@
 window.onload = function() {
     console.log("liff init start");
-    const defaultLiffId = "1656413317-2gXeKoxD";
+    const defaultLiffId = "liffId";
     registerButtonHandlers();
     liff.init({
         liffId: defaultLiffId,
@@ -21,8 +21,7 @@ function registerButtonHandlers() {
             alert('To get an access token, you need to be logged in. Please tap the "login" button below and try again.');
         } else {
             const accessToken = liff.getAccessToken();
-            console.log(accessToken);
-            axios.get("https://a0fb-223-218-164-19.ngrok.io/liff/getLineId",{
+            axios.get("{change your domain}/liff/getLineId",{
                 headers: {
                     'Authorization': 'Bearer ' + accessToken
                 }
